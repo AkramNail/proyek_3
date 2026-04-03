@@ -31,7 +31,9 @@ class HalamanProduk extends StatefulWidget{
 
 class _HalamanProdukState extends State<HalamanProduk> {
 
+  void addToCart(){
 
+  }
 
   Widget gambarProduk(double divacieHeight){
     return Container(
@@ -104,12 +106,12 @@ class _HalamanProdukState extends State<HalamanProduk> {
   Widget widgetUkuranProduk(double divacieHeight) {
     return Container(
       alignment: Alignment.centerLeft,
-      margin: EdgeInsetsDirectional.only(bottom: 8, start: 20, end: 20),
-      child: SingleChildScrollView(
+      margin: EdgeInsetsDirectional.only(bottom: 8, start: 20, end: 10),
+      child: Row(
+        children: [
+          SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: 
-        Row(
-          children: [
             Row(
               children: widget.ukuranProduk.map((ukuran) {
                 return Container(
@@ -123,20 +125,28 @@ class _HalamanProdukState extends State<HalamanProduk> {
                 );
               }).toList(),
             ),
-            Container(
+          ),
+          
+          Spacer(),
+
+          InkWell(
+            onTap: () {
+              
+            },
+            child: Container(
               margin: const EdgeInsets.only(right: 8),
               height: 35 * divacieHeight,
-              width: 80 * divacieHeight,
-              color: const Color.fromARGB(255, 212, 227, 224),
+              width: 100 * divacieHeight,
+              color: const Color.fromARGB(0, 212, 227, 224),
               child: Center(
                 child: Text("Check size detail", style: TextStyle(
                   color: Colors.black,
-                  fontSize: 8 * divacieHeight
+                  fontSize: 10 * divacieHeight
                 ),),
               ),
             ),
-          ],
-        ),
+          )
+        ]
       ),
     );
   }
@@ -165,6 +175,75 @@ class _HalamanProdukState extends State<HalamanProduk> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget bagianHarga() {
+    return Container(
+      margin: EdgeInsetsDirectional.only(bottom: 8, start: 20, end: 20),
+      child: Row(
+        children: [
+
+          // Text total dan harga
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Total",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                widget.hargaProduk,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromARGB(255, 255, 61, 61),
+                ),
+              ),
+            ],
+          ),
+
+          Spacer(),
+
+          // Button Add to Cart (full clickable)
+          InkWell(
+            onTap: () {
+              addToCart();
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Color.fromARGB(255, 10, 207, 131),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    "Add to Cart",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  SvgPicture.asset(
+                    "assets/icon/shope.svg",
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -216,6 +295,7 @@ class _HalamanProdukState extends State<HalamanProduk> {
                 textKategori(divacieHeight),
                 widgetUkuranProduk(divacieHeight),
                 textBahan(divacieHeight),
+                bagianHarga(),
               ]
             ),
           )

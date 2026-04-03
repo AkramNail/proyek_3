@@ -5,6 +5,8 @@ import 'package:proyek_3/halaman/cart.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:proyek_3/halaman/produk/produk.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HalamanHome extends StatelessWidget{
   final PersistentTabController controller;
@@ -26,9 +28,43 @@ class HalamanHome extends StatelessWidget{
       'assets/banner/Banner_4.png'
     ];
 
-    List<String> listYanto = ["L", "XXL", "XXXL", "L", "XXL", "XXXL", ];
+    List<String> listYanto = ["L", "XXL", "XXXL"];
     List<String> listGambar = ["assets/baju/1.jpg", "assets/baju/2.jpg"];
 
+    
+
+    Future<void> pindahHalamanProduk(
+      String kategoriProduk,
+      String bahanProduk,
+      String deskripsiProduk,
+      String hargaProduk,
+    ) async {
+      final url = Uri.parse('http://172.31.244.174:8000/api/produk');
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HalamanProduk(
+              namaProduk: data['data'][0]['nama_produk'], 
+              kategoriProduk: kategoriProduk,
+              bahanProduk: bahanProduk,
+              deskripsiProduk: deskripsiProduk,
+              hargaProduk: hargaProduk,
+              ukuranProduk: listYanto,
+              daftarGambar: listGambar
+            ),
+          ),
+        );
+
+      } else {
+        print('Gagal mengambil data');
+      }
+    }
     void pindahHalamanKeCart(){
       controller.jumpToTab(3);
     }
@@ -48,7 +84,7 @@ class HalamanHome extends StatelessWidget{
         ),
       );
     }
-
+    /*
     void pindahHalamanProduk(
       String namaProduk,
       String kategoriProduk,
@@ -73,6 +109,7 @@ class HalamanHome extends StatelessWidget{
         ),
       );
     }
+    */
 
     Widget iconTopBar(String path, Function halaman) {
       return 
@@ -161,13 +198,10 @@ class HalamanHome extends StatelessWidget{
         color: const Color.fromARGB(42, 175, 175, 175),
         child: ElevatedButton(
             onPressed: () { pindahHalamanProduk(
-              namaProduk,
               kategoriProduk,
               bahanProduk,
               deskripsiProduk,
-              hargaProduk,
-              listYanto,
-              listGambar
+              hargaProduk
             ); },
             style: TextButton.styleFrom(
               backgroundColor: Colors.transparent,
@@ -362,7 +396,7 @@ class HalamanHome extends StatelessWidget{
                             "baju yanto",
                             "T-shirt",
                             "Steal",
-                            "Tahan lama gan",
+                            "Kaos berbahan katun premium yang lembut, adem, dan nyaman dipakai sehari-hari. Desain simpel, jahitan rapi, dan tidak mudah pudar. Cocok untuk gaya kasual dengan berbagai pilihan ukuran dan warna.",
                             "Rp. 70.000",
                             listYanto,
                             listGambar

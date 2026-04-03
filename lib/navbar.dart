@@ -43,7 +43,7 @@ class NavbarUser extends StatelessWidget {
 
       //kategori
       PersistentTabConfig(
-        screen: const HalamanKategori(),
+        screen: HalamanKategori(controller: _controller),
         item: ItemConfig(
           icon: navIcon('assets/icon/category.svg', colorIconAktif),
           inactiveIcon: navIcon('assets/icon/category.svg', colorIconMati),
@@ -55,7 +55,7 @@ class NavbarUser extends StatelessWidget {
 
       //order
       PersistentTabConfig(
-        screen: const HalamanOrder(),
+        screen: HalamanOrder(controller: _controller),
         item: ItemConfig(
           icon: navIcon('assets/icon/order.svg', colorIconAktif),
           inactiveIcon: navIcon('assets/icon/order.svg', colorIconMati),
