@@ -1,19 +1,24 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:proyek_3/api.dart';
 
 class HalamanProduk extends StatefulWidget{
 
+  final String id;
   final String namaProduk;
   final String kategoriProduk;
   final String bahanProduk;
   final String deskripsiProduk;
   final String hargaProduk;
-  final List<String> ukuranProduk;
-  final List<String> daftarGambar;
+  final List<dynamic> ukuranProduk;
+  final List<dynamic> daftarGambar;
 
   const HalamanProduk({super.key, 
+    required this.id, 
     required this.namaProduk, 
     required this.kategoriProduk, 
     required this.bahanProduk, 
@@ -31,10 +36,6 @@ class HalamanProduk extends StatefulWidget{
 
 class _HalamanProdukState extends State<HalamanProduk> {
 
-  void addToCart(){
-
-  }
-
   Widget gambarProduk(double divacieHeight){
     return Container(
       height: 200,
@@ -42,14 +43,28 @@ class _HalamanProdukState extends State<HalamanProduk> {
       child: Center(
         child: CarouselSlider(items: widget.daftarGambar.map((item)
           => Container(
-            height: 100 * divacieHeight,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(item),
+            height: MediaQuery.of(context).size.height * 0.2, // 20% of screen height
+            width: double.infinity,
+            child: ClipRRect( // To keep the "BoxDecoration" rounded corner look
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                item,
                 fit: BoxFit.cover,
+                // VERY IMPORTANT: This prevents freezing by resizing image in memory
+                cacheWidth: 400, 
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[200],
+                    child: Icon(Icons.broken_image),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(child: CircularProgressIndicator());
+                },
               ),
             ),
-          ),
+          )
         ).toList()
         ,options: CarouselOptions(
           height: 200,
@@ -210,7 +225,7 @@ class _HalamanProdukState extends State<HalamanProduk> {
           // Button Add to Cart (full clickable)
           InkWell(
             onTap: () {
-              addToCart();
+              //addToCart();
             },
             borderRadius: BorderRadius.circular(10),
             child: Container(

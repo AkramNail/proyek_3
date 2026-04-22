@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:proyek_3/login/auth_service.dart';
 import 'package:proyek_3/login/login.dart';
 
 TextEditingController namaController = TextEditingController();
@@ -246,6 +248,16 @@ class _HalamanDaftarState extends State<HalamanDaftar> {
     double maxWidth = MediaQuery.of(context).size.width;
     double maxHeight = MediaQuery.of(context).size.width;
 
+    void simpanAkunKeFirebase(){
+      AuthService().signup(
+        nama: namaController.text, 
+        alamat: alamatController.text, 
+        nohp: nohpController.text, 
+        email: emailController.text, 
+        password: passwordController.text, 
+        context: context);
+    }
+
     return Scaffold(
       body: ScrollConfiguration(
         behavior: const ScrollBehavior(),
@@ -311,7 +323,9 @@ class _HalamanDaftarState extends State<HalamanDaftar> {
                             borderRadius: BorderRadius.circular(7),
                           ),
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              simpanAkunKeFirebase();
+                            },
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,

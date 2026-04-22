@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:proyek_3/login/login.dart';
 import 'package:proyek_3/login/daftar.dart';
@@ -9,7 +11,12 @@ import 'package:proyek_3/navbar.dart';
 
 var navBarIndex = 0;
 
-void main() {
+void main() async{
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
   runApp(const MyApp());
 }
 
@@ -49,7 +56,23 @@ class _MyHomePageState extends State<MyHomePage> {
         toolbarHeight: 0,
         backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       ),
-      body: NavbarUser(),
+      body: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (snapshot.hasData) {
+            return NavbarUser(); 
+          } else {
+            return HalamanLogin();
+          }
+        },
+      ),
     );
   }
 }

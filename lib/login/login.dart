@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:proyek_3/login/auth_service.dart';
 import 'package:proyek_3/login/daftar.dart';
 import 'package:proyek_3/navbar.dart';
 
@@ -15,174 +16,6 @@ class HalamanLogin extends StatefulWidget{
   State<HalamanLogin> createState() => _HalamanLoginState();
 
 }
-
-class FormEmailPassword extends StatelessWidget{
-
-  //double DivacieWidth;
-  double divacieHeight;
-  double maxWidth;
-  //double maxHeight;
-
-  FormEmailPassword({super.key, required this.divacieHeight, required this.maxWidth,});
-
-  @override
-  Widget build(BuildContext context){
-    return 
-      Container( color: Colors.transparent, 
-        height: 160 * divacieHeight,
-        margin: EdgeInsets.only(left: 20, right: 20, top: 20),
-        child: 
-        Form(
-
-        child: Column(
-          children: [ 
-            Column(
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: 10),
-                  alignment: Alignment.centerLeft,
-                  child: Text("Email", 
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12 * divacieHeight,
-                      color: Colors.white),)
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 5),
-                  height: 30 * divacieHeight,
-                  width: maxWidth,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(7),
-                    color: Color.fromRGBO(216, 216, 221, 100),
-                  ),
-                  child:  TextFormField(
-                    textAlignVertical: TextAlignVertical.center, 
-                    controller: emailController,
-                    validator: (value){
-                      if(value == null || value.isEmpty){
-                        return "Email tidak boleh kosong";
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: const Color.fromARGB(255, 112, 112, 112), width: 2), // saat diklik
-                      ),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.red),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10), // atur padding
-                    )
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: 10),
-                  alignment: Alignment.centerLeft,
-                  child: Text("Password", 
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12 * divacieHeight,
-                      color: Colors.white),)
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 5),
-                  height: 30 * divacieHeight,
-                  width: maxWidth,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(7),
-                    color: Color.fromRGBO(216, 216, 221, 100),
-                  ),
-                  child:  TextFormField(
-                    textAlignVertical: TextAlignVertical.center, 
-                    controller: passwordController,
-                    validator: (value){
-                      if(value == null || value.isEmpty){
-                        return "Email tidak boleh kosong";
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: const Color.fromARGB(255, 112, 112, 112), width: 2), // saat diklik
-                      ),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.red),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10), // atur padding
-                    )
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              margin: EdgeInsets.only(top: 10),
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0),
-                  ),
-                ),
-                child: Text(
-                  "Forget password",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12 * divacieHeight,
-                    color: Color.fromRGBO(96, 255, 48, 1)
-                  ),
-                ),
-              ),
-            )
-            
-          ]
-        ),
-        )
-      );
-  }
-
-}
-
-class ButtonLoginGoogle extends StatelessWidget{
-  
-  double divacieHeight;
-  double maxWidth;
-
-  ButtonLoginGoogle({super.key, required this.divacieHeight, required this.maxWidth});
-
-  @override
-  Widget build(BuildContext context){
-    return Container(
-      height: 45 * divacieHeight,
-      width: maxWidth,
-      margin: EdgeInsets.only(left: 20, right: 20, top: 10),
-      decoration: BoxDecoration(
-        color: Colors.blueGrey, 
-        borderRadius: BorderRadius.circular(7)
-      ),
-      child: ElevatedButton(onPressed: (){}, 
-        style: TextButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
-        child: SvgPicture.asset(
-          'assets/icon/google.svg',
-          width: 17,
-          height: 17,
-          colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-        )
-      )
-    );
-  }
-
-}
-
-
 
 class _HalamanLoginState extends State<HalamanLogin> {
 
@@ -199,17 +32,136 @@ class _HalamanLoginState extends State<HalamanLogin> {
 
   void mengverivikasiEmailDanPassword(String inputEmail, String inputPassword){
 
-    if(inputEmail == "udin@gmail.com" && inputPassword == "123"){
+    AuthService().signin(
+      email: inputEmail, 
+      password: inputPassword, 
+      context: context);
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => NavbarUser(),
-        ),
-      );
+  }
 
-    }
+  Widget formEmailPassword(
+      double divacieHeight,
+      double maxWidth
+  ){
+    return Container( color: Colors.transparent, 
+      height: 160 * divacieHeight,
+      margin: EdgeInsets.only(left: 20, right: 20, top: 20),
+      child: 
+      Form(
 
+      child: Column(
+        children: [ 
+          Column(
+            children: [
+              Container(
+                margin: EdgeInsets.only(top: 10),
+                alignment: Alignment.centerLeft,
+                child: Text("Email", 
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12 * divacieHeight,
+                    color: Colors.white),)
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 5),
+                height: 30 * divacieHeight,
+                width: maxWidth,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(7),
+                  color: Color.fromRGBO(216, 216, 221, 100),
+                ),
+                child:  TextFormField(
+                  textAlignVertical: TextAlignVertical.center, 
+                  controller: emailController,
+                  validator: (value){
+                    if(value == null || value.isEmpty){
+                      return "Email tidak boleh kosong";
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: const Color.fromARGB(255, 112, 112, 112), width: 2), // saat diklik
+                    ),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10), // atur padding
+                  )
+                ),
+              ),
+            ],
+          ),
+          Column(
+            children: [
+              Container(
+                margin: EdgeInsets.only(top: 10),
+                alignment: Alignment.centerLeft,
+                child: Text("Password", 
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12 * divacieHeight,
+                    color: Colors.white),)
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 5),
+                height: 30 * divacieHeight,
+                width: maxWidth,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(7),
+                  color: Color.fromRGBO(216, 216, 221, 100),
+                ),
+                child:  TextFormField(
+                  textAlignVertical: TextAlignVertical.center, 
+                  controller: passwordController,
+                  validator: (value){
+                    if(value == null || value.isEmpty){
+                      return "Email tidak boleh kosong";
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: const Color.fromARGB(255, 112, 112, 112), width: 2), // saat diklik
+                    ),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10), // atur padding
+                  )
+                ),
+              ),
+            ],
+          ),
+          Container(
+            margin: EdgeInsets.only(top: 10),
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(0),
+                ),
+              ),
+              child: Text(
+                "Forget password",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12 * divacieHeight,
+                  color: Color.fromRGBO(96, 255, 48, 1)
+                ),
+              ),
+            ),
+          )
+          
+        ]
+      ),
+      )
+    );
   }
 
   @override
@@ -273,7 +225,7 @@ class _HalamanLoginState extends State<HalamanLogin> {
                     ),
               
                     //input email dan password
-                    FormEmailPassword(divacieHeight: divacieHeight, maxWidth: maxWidth),
+                    formEmailPassword(divacieHeight, maxWidth),
 
                     //button login
                     Container(

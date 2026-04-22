@@ -1,98 +1,17 @@
 
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:proyek_3/halaman/cart.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:proyek_3/halaman/produk/produk.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-
-
-class HalamanHome extends StatefulWidget {
+class HalamanBack extends StatelessWidget{
   final PersistentTabController controller;
 
-  const HalamanHome({super.key, required this.controller});
-
-  @override
-  State<HalamanHome> createState() => _HalamanHomeState();
-}
-
-class _HalamanHomeState extends State<HalamanHome> {
-
-  List<Map<String, dynamic>> listProduk = [];
-
-
-  @override
-  void initState() {
-    super.initState();
-    getData();
-  }
-
-  Future<void> getData() async {
-    try {
-      // 1. Get Firestore Snapshot
-      var snapshot = await FirebaseFirestore.instance
-        .collection('produk')
-        .limit(6)
-        .get();
-
-      List<Map<String, dynamic>> temporaryList = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
-          data['id'] = doc.id;
-
-          if (data['foto'] != null && data['foto'] is List && (data['foto'] as List).isNotEmpty) {
-            List<String> fileNames = List<String>.from(data['foto']);
-            
-            // 2. Fetch URLs with individual error handling
-            List<String> fullUrls = await Future.wait(
-              fileNames.map((name) async {
-                try {
-                  return await getImageUrl(name);
-                } catch (e) {
-                  print("Error getting URL for $name: $e");
-                  return "https://via.placeholder.com/150"; // Fallback URL
-                }
-              }),
-            );
-            
-            data['foto'] = fullUrls;
-          } else {
-            data['foto'] = []; // Ensure it's an empty list, not null
-          }
-
-          temporaryList.add(data);
-        } catch (itemError) {
-          print("Error processing document ${doc.id}: $itemError");
-        }
-      }
-
-      // 3. Safety check before updating UI
-      if (mounted) {
-        setState(() {
-          listProduk = temporaryList;
-          print(listProduk);
-          final user = FirebaseAuth.instance.currentUser;
-          print(user);
-        });
-      }
-    } catch (globalError) {
-      print("GLOBAL ERROR in getData: $globalError");
-    }
-  }
-
-  Future<String> getImageUrl(String imageName) async {
-    // If imageName is empty or null, return a placeholder immediately
-    if (imageName.isEmpty) return "https://via.placeholder.com/150";
-
-    final ref = FirebaseStorage.instance.ref().child(imageName);
-    return await ref.getDownloadURL();
-  }
+  HalamanBack({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -109,11 +28,46 @@ class _HalamanHomeState extends State<HalamanHome> {
       'assets/banner/Banner_4.png'
     ];
 
-    //List<String> listYanto = ["L", "XXL", "XXXL"];
+    List<String> listYanto = ["L", "XXL", "XXXL"];
     List<String> listGambar = ["assets/baju/1.jpg", "assets/baju/2.jpg"];
 
+    
+
+    Future<void> pindahHalamanProduk(
+      String kategoriProduk,
+      String bahanProduk,
+      String deskripsiProduk,
+      String hargaProduk,
+    ) async {
+      final url = Uri.parse('http://172.31.244.174:8000/api/produk');
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HalamanProduk(
+              id: "damdude",
+              namaProduk: data['data'][0]['nama_produk'], 
+              kategoriProduk: kategoriProduk,
+              bahanProduk: bahanProduk,
+              deskripsiProduk: deskripsiProduk,
+              hargaProduk: hargaProduk,
+              ukuranProduk: listYanto,
+              daftarGambar: listGambar
+            ),
+          ),
+        );
+
+      } else {
+        print('Gagal mengambil data');
+      }
+    }
     void pindahHalamanKeCart(){
-      widget.controller.jumpToTab(3);
+      controller.jumpToTab(3);
     }
     void pindahHalamanKeInfo(){
       Navigator.push(
@@ -131,22 +85,20 @@ class _HalamanHomeState extends State<HalamanHome> {
         ),
       );
     }
-    
+    /*
     void pindahHalamanProduk(
-      String id,
       String namaProduk,
       String kategoriProduk,
       String bahanProduk,
       String deskripsiProduk,
       String hargaProduk,
-      List<dynamic> ukuranProduk,
-      List<dynamic> daftarGambar,
+      List<String> ukuranProduk,
+      List<String> daftarGambar,
     ){
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => HalamanProduk(
-            id: id,
             namaProduk: namaProduk, 
             kategoriProduk: kategoriProduk,
             bahanProduk: bahanProduk,
@@ -158,6 +110,7 @@ class _HalamanHomeState extends State<HalamanHome> {
         ),
       );
     }
+    */
 
     Widget iconTopBar(String path, Function halaman) {
       return 
@@ -229,14 +182,13 @@ class _HalamanHomeState extends State<HalamanHome> {
     }
 
     Widget cardProduk(
-      String id,
       String namaProduk,
       String kategoriProduk,
       String bahanProduk,
       String deskripsiProduk,
       String hargaProduk,
-      List<dynamic> ukuranProduk,
-      List<dynamic> daftarGambar,
+      List<String> ukuranProduk,
+      List<String> daftarGambar,
     ){
 
       return 
@@ -247,14 +199,10 @@ class _HalamanHomeState extends State<HalamanHome> {
         color: const Color.fromARGB(42, 175, 175, 175),
         child: ElevatedButton(
             onPressed: () { pindahHalamanProduk(
-              id,
-              namaProduk,
               kategoriProduk,
               bahanProduk,
               deskripsiProduk,
-              hargaProduk,
-              ukuranProduk,
-              daftarGambar
+              hargaProduk
             ); },
             style: TextButton.styleFrom(
               backgroundColor: Colors.transparent,
@@ -269,13 +217,11 @@ class _HalamanHomeState extends State<HalamanHome> {
                   margin: const EdgeInsets.all(7.0),
                   height: 0.2 * maxHeight,
                   width: 0.3 * maxHeight,
-                  child: Image.network(
-                    (daftarGambar.isNotEmpty && daftarGambar[0].toString().startsWith('http'))
-                      ? daftarGambar[0]
-                      : 'https://via.placeholder.com/150',
-                      cacheWidth: 300, // Limits the resolution in memory
-                      cacheHeight: 300,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(daftarGambar[0]),
+                      fit: BoxFit.cover
+                    ),
                   ),
                 ),
 
@@ -305,51 +251,6 @@ class _HalamanHomeState extends State<HalamanHome> {
 
         );
 
-    }
-
-    Widget kumpulanProduk(){
-      return Container(
-        margin: EdgeInsetsDirectional.only(bottom: 15, top: 0),
-        child: 
-        Column(
-          children: 
-          List.generate(listProduk.length, (index) {
-
-            if (index % 2 != 0) return SizedBox();
-
-            return Row(
-              //disini
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center, 
-              children: [
-                cardProduk(
-                  listProduk[index]['id'],
-                  listProduk[index]['nama_produk'],
-                  listProduk[index]['kategori'],
-                  listProduk[index]['bahan_produk'],
-                  listProduk[index]['deskripsi_produk'],
-                  listProduk[index]['harga_produk'].toString(),
-                  listProduk[index]['ukuran'],
-                  listProduk[index]['foto']
-                ),
-
-                (index < listProduk.length - 1)
-                
-                ? cardProduk(
-                  listProduk[index + 1]['id'],
-                  listProduk[index + 1]['nama_produk'],
-                  listProduk[index + 1]['kategori'],
-                  listProduk[index + 1]['bahan_produk'],
-                  listProduk[index + 1]['deskripsi_produk'],
-                  listProduk[index + 1]['harga_produk'].toString(),
-                  listProduk[index + 1]['ukuran'],
-                  listProduk[index + 1]['foto']
-                )
-                : Container()
-            ],);
-           }),
-        )
-      );      
     }
 
     return Scaffold(
@@ -446,7 +347,7 @@ class _HalamanHomeState extends State<HalamanHome> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        buttonKategori("T-shirt"), 
+                        buttonKategori("T-Shirt"), 
                         buttonKategori("Pants"),
                         buttonKategori("Shirt"),
                         buttonKategori("Cap"),
@@ -481,7 +382,64 @@ class _HalamanHomeState extends State<HalamanHome> {
                 ),
 
                 //kumpulan produk
-                kumpulanProduk()
+                Container(
+                  margin: EdgeInsetsDirectional.only(bottom: 15, top: 0),
+                  child: 
+                    Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center, 
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center, 
+                        children: [
+                          cardProduk(
+                            "baju yanto",
+                            "T-shirt",
+                            "Steal",
+                            "Kaos berbahan katun premium yang lembut, adem, dan nyaman dipakai sehari-hari. Desain simpel, jahitan rapi, dan tidak mudah pudar. Cocok untuk gaya kasual dengan berbagai pilihan ukuran dan warna.",
+                            "Rp. 70.000",
+                            listYanto,
+                            listGambar
+                          ),
+                          cardProduk(
+                            "baju asep",
+                            "T-shirt",
+                            "Steal",
+                            "Tahan lama gan",
+                            "Rp. 70.000",
+                            listYanto,
+                            listGambar
+                          ),
+                        ]
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center, 
+                        children: [
+                          cardProduk(
+                            "baju yanto",
+                            "T-shirt",
+                            "Steal",
+                            "Tahan lama gan",
+                            "Rp. 70.000",
+                            listYanto,
+                            listGambar
+                          ),
+                          cardProduk(
+                            "baju yanto",
+                            "T-shirt",
+                            "Steal",
+                            "Tahan lama gan",
+                            "Rp. 70.000",
+                            listYanto,
+                            listGambar
+                          ),
+                        ]
+                      ),
+                    ]
+                  ),                
+                )
               ],
             )
           )
