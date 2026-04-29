@@ -1,32 +1,27 @@
 
-
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
-import 'package:proyek_3/detail_pembayaran.dart';
-import 'package:proyek_3/mid_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:proyek_3/mid_test.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-//https://console.firebase.google.com/project/proyek3-37bb7/overview
+class HalamanHitungPembayaran extends StatefulWidget{
 
-class HalamanCart extends StatefulWidget{
-
-  final PersistentTabController controller;
-
-  const HalamanCart({super.key, required this.controller});
+  HalamanHitungPembayaran({super.key});
 
   @override
-  State<HalamanCart> createState() => _HalamanCartState();
+  State<HalamanHitungPembayaran> createState() => _HalamanHitungPembayaranState();
 
 }
 
-class _HalamanCartState extends State<HalamanCart> {
-  
-  String idPunyaUser = "";
+class _HalamanHitungPembayaranState extends State<HalamanHitungPembayaran> {
+
   List<Map<String, dynamic>> dataUser = [
     {
       'nama': 'Load',
@@ -34,176 +29,26 @@ class _HalamanCartState extends State<HalamanCart> {
     }
   ];
   List<Map<String, dynamic>> listCart = [];
-  List<Map<String, dynamic>> listProduk = [];
-  List<Map<String, dynamic>> listDataTransaksi = [];
-  TextEditingController controllerHarga = TextEditingController(text: "Load");
+  TextEditingController controllerHarga = TextEditingController(text: "");
   int totalBayar = 0;
-  bool sedangBayar = false;
 
   @override
   void initState() {
     super.initState();
-    refreshData();
+    getData();
   }
 
   Future<void> refreshData() async {
-    setState(() {
-      listCart = [];
-      sedangBayar =  false;
-      controllerHarga.text = "Load";
-    });
+    listCart = [];
     getData();
   }
-  Future<void> checkAdaPembayaranAtauTidak(String idUser) async{
-    var snapshot = await FirebaseFirestore.instance
-      .collection("sedang_transaksi")
-      .where("id_pembeli", isEqualTo: idUser)
-      .get();
 
-    List<Map<String, dynamic>> temporaryList = [];
-
-    for (var doc in snapshot.docs) {
-      Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
-      temporaryList.add(data);
-      data['id'] = doc.id;
-    }
-    print("HREEEEEEEEEEEEEEEEEE");
-    print(temporaryList);
-    listDataTransaksi = temporaryList;
-    if(listDataTransaksi.isNotEmpty){
-      sedangBayar =  true;
-      checkAndUpdatePayment(listDataTransaksi[0]['id']);
-    }
-  }
-  void checkAndUpdatePayment(String orderId) async {
-    final response = await http.get(
-      Uri.parse(
-        'https://us-central1-proyek3-37bb7.cloudfunctions.net/checkAndUpdateTransaction?order_id=$orderId&id_user=$idPunyaUser'
-      ),
-    );
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MidtransWebView(
-          url: listDataTransaksi[0]['redirect_url'],
-          orderId: listDataTransaksi[0]['id'],
-          controller: widget.controller,
-        ),
-      ),
-    );
-  }
-
-/*
-  Future<void> getData() async {
-    try {
-
-    final User? user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        String uid = user.uid;
-        print('Current User ID: $uid');
-        //checkAdaPembayaranAtauTidak(uid);
-
-        // 1. Get Firestore Snapshot
-        var snapshot = await FirebaseFirestore.instance
-          .collection('produk')
-          .limit(6)
-          .get();
-        var snapshotCart = await FirebaseFirestore.instance
-          .collection('cart')
-          .limit(6)
-          .get();
-
-
-        List<Map<String, dynamic>> temporaryList = [];
-        List<Map<String, dynamic>> temporaryCartList = [];
-
-        for (var doc in snapshot.docs) {
-          try {
-            Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
-            data['idproduk'] = doc.id;
-
-            if (data['foto'] != null && data['foto'] is List && (data['foto'] as List).isNotEmpty) {
-              List<String> fileNames = List<String>.from(data['foto']);
-              
-              // 2. Fetch URLs with individual error handling
-              List<String> fullUrls = await Future.wait(
-                fileNames.map((name) async {
-                  try {
-                    return await getImageUrl(name);
-                  } catch (e) {
-                    print("Error getting URL for $name: $e");
-                    return "https://via.placeholder.com/150"; // Fallback URL
-                  }
-                }),
-              );
-              
-              data['foto'] = fullUrls;
-            } else {
-              data['foto'] = []; // Ensure it's an empty list, not null
-            }
-            
-            temporaryList.add(data);
-
-          } catch (itemError) {
-            print("Error processing document ${doc.id}: $itemError");
-          }
-        }
-
-        int totalHargaTempoary = 0;
-        for (var doc in snapshotCart.docs) {
-          Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
-          data['id'] = doc.id;
-          
-          temporaryList.forEach((item){
-            if(data['produk'] == item['idproduk'] && uid == data['pembeli']){
-              data['nama_produk'] = item['nama_produk'];
-              data['harga_produk'] = item['harga_produk'];
-              data['deskripsi_produk'] = item['deskripsi_produk'];
-              data['foto'] = item['foto'][0];
-              temporaryCartList.add(data);
-              final jumlah = (data['jumlah'] ?? 0);
-              final harga = (data['harga_produk'] ?? 0);
-              totalHargaTempoary += (harga is int ? harga : int.tryParse(harga.toString()) ?? 0)*(jumlah is int ? jumlah : int.tryParse(jumlah.toString()) ?? 0);
-            }
-          });
-
-        }
-
-
-
-        // 3. Safety check before updating UI
-        if (mounted) {
-          setState(() {
-            listCart = temporaryCartList;
-            controllerHarga.text = totalHargaTempoary.toString();
-            totalBayar = totalHargaTempoary;
-            print(listCart);
-            //final user = FirebaseAuth.instance.currentUser;
-            //print(user);
-          });
-        }
-      }
-    } catch (globalError) {
-      print("GLOBAL ERROR in getData: $globalError");
-    }
-  }
-
-  Future<String> getImageUrl(String imageName) async {
-    // If imageName is empty or null, return a placeholder immediately
-    if (imageName.isEmpty) return "https://via.placeholder.com/150";
-
-    final ref = FirebaseStorage.instance.ref().child(imageName);
-    return await ref.getDownloadURL();
-  }
-*/
   Future<void> getData() async {
     try {
     final User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         String uid = user.uid;
-        idPunyaUser = user.uid;
         print('Current User ID: $uid');
-        checkAdaPembayaranAtauTidak(uid);
 
         // 1. Get Firestore Snapshot
         var snapshot = await FirebaseFirestore.instance
@@ -294,7 +139,6 @@ class _HalamanCartState extends State<HalamanCart> {
             totalBayar = totalHargaTempoary + 10000;
             dataUser = [];
             dataUser = temporaryAkun;
-            listProduk = temporaryList;
             print(listCart);
             //final user = FirebaseAuth.instance.currentUser;
             print(dataUser);
@@ -314,24 +158,6 @@ class _HalamanCartState extends State<HalamanCart> {
     return await ref.getDownloadURL();
   }
 
-  
-  Future<void> updateJumlahDiProduk(int jumlah, String idProduk, int index)async{
-    var doc = await FirebaseFirestore.instance
-        .collection('produk')
-        .doc(idProduk)
-        .get();
-
-    List jumlahProduk = doc['jumlah_produk'];
-
-    jumlahProduk[index] = jumlah;
-
-    await FirebaseFirestore.instance
-        .collection('produk')
-        .doc(idProduk)
-        .update({
-          'jumlah_produk': jumlahProduk,
-        });
-  }
   Future<void> kirimDataProduk(
     String alamat,
     String foto,
@@ -342,21 +168,9 @@ class _HalamanCartState extends State<HalamanCart> {
     String nomor_hp,
     String ukuran,
     String tipe,
-    String status,
-    String idProduk
+    String status
   ) async{
     String idDoc = DateTime.now().millisecondsSinceEpoch.toString();
-    listProduk.forEach((item){
-      int jumlahKurang = 0;
-      int index = 0;
-      item['ukuran'].forEach((items){
-        if(idProduk == item['idproduk'] && ukuran == items){
-          jumlahKurang = item['jumlah_produk'][index] - int.parse(jumlah);
-          updateJumlahDiProduk(jumlahKurang, idProduk, index);
-        }
-        index += 1;
-      });
-    });
     await FirebaseFirestore.instance
       .collection('produk_tunggu_bayar')
       .doc(idDoc)
@@ -370,8 +184,7 @@ class _HalamanCartState extends State<HalamanCart> {
         'nomor_hp': nomor_hp,
         'ukuran': ukuran,
         'tipe': tipe,
-        'status': status,
-        'id_produk': idProduk
+        'status': status
       });
   }
   Future<void> kirimDataSedangDalamTransaksi(
@@ -422,23 +235,23 @@ class _HalamanCartState extends State<HalamanCart> {
         dataUser[0]['nomor_hp'],
         item['ukuran'],
         item['tipe'],
-        tipe,
-        item['produk']
+        tipe
       );
     });
 
     // 2. Buka WebView
-    sedangBayar = true;
+    /*
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => MidtransWebView(
           url: redirectUrl,
           orderId: idOrder,
-          controller: widget.controller,
+          controller: widget.c,
         ),
       ),
     );
+    */
   }
   void lakukanPembayaran(){
     kirimDataSedangDalamTransaksi(
@@ -552,68 +365,6 @@ class _HalamanCartState extends State<HalamanCart> {
     );
   }
 
-  Widget cardAlamat(
-    String nama,
-    String alamat,
-  ) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.black12,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ICON
-          const Icon(
-            Icons.location_on_outlined,
-            size: 22,
-            color: Colors.black87,
-          ),
-
-          const SizedBox(width: 10),
-
-          /// TEXT
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nama,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  alamat,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
   Widget totalHarga() {
     return Container(
       margin: EdgeInsets.only(left: 10, right: 10, bottom: 20),
@@ -639,84 +390,10 @@ class _HalamanCartState extends State<HalamanCart> {
     );
   }
 
-  Widget rowItem(String title, String value, {bool isBold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-  Widget ringkasanPembayaran({
-    required String subtotal,
-    required String ongkir,
-    required String total,
-  }) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAEAEA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// TITLE
-          const Text(
-            "Ringkasan Pembayaran",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          /// SUBTOTAL
-          rowItem("Subtotal", subtotal),
-
-          const SizedBox(height: 4),
-
-          /// ONGKIR
-          rowItem("Ongkir", ongkir),
-
-          const SizedBox(height: 6),
-
-          /// TOTAL
-          rowItem(
-            "Total",
-            total,
-            isBold: true,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget buttonLanjutkanPembayaran() {
     return GestureDetector(
       onTap: (){
-        //popupKomfirmasi();
-        if(sedangBayar == true){
-          checkAdaPembayaranAtauTidak(idPunyaUser);
-        }else{
-          lakukanPembayaran();
-        }
+        lakukanPembayaran();
       },
       child: Container(
         margin: EdgeInsets.only(left: 10, right: 10),
@@ -866,6 +543,136 @@ class _HalamanCartState extends State<HalamanCart> {
     );
   }
 
+  Widget cardAlamat(
+    String nama,
+    String alamat,
+  ) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.black12,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ICON
+          const Icon(
+            Icons.location_on_outlined,
+            size: 22,
+            color: Colors.black87,
+          ),
+
+          const SizedBox(width: 10),
+
+          /// TEXT
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nama,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  alamat,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget rowItem(String title, String value, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+  Widget ringkasanPembayaran({
+    required String subtotal,
+    required String ongkir,
+    required String total,
+  }) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAEAEA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// TITLE
+          const Text(
+            "Ringkasan Pembayaran",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          /// SUBTOTAL
+          rowItem("Subtotal", subtotal),
+
+          const SizedBox(height: 4),
+
+          /// ONGKIR
+          rowItem("Ongkir", ongkir),
+
+          const SizedBox(height: 6),
+
+          /// TOTAL
+          rowItem(
+            "Total",
+            total,
+            isBold: true,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -882,71 +689,51 @@ class _HalamanCartState extends State<HalamanCart> {
             color: const Color.fromARGB(255, 118, 224, 131),
             borderRadius: BorderRadius.circular(5)
           ),
-          child: Row(
-            children: [
-              
-              IconButton(
-                onPressed: () {
-                  widget.controller.jumpToTab(0);
-                },
-                icon: SvgPicture.asset(
-                  "assets/icon/back.svg",
-                  width: 20,
-                  height: 20,
-                  colorFilter: ColorFilter.mode(const Color.fromARGB(255, 0, 0, 0), BlendMode.srcIn),
-                ),
-              ),
-
-              Text(
-                "Cart",
-                style: TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+          child: Center(child: 
+            Text(
+            "Pembayaran",
+            style: TextStyle(
+              color: Color.fromARGB(255, 0, 0, 0),
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          )
+          ,)
         )
       ),
-      body: ScrollConfiguration(
+      body: 
+      ScrollConfiguration(
         behavior: const ScrollBehavior(),
         child: GlowingOverscrollIndicator(
           axisDirection: AxisDirection.down,
           color: const Color.fromARGB(156, 0, 0, 0),
-          child: RefreshIndicator(
-            onRefresh: () async {
-              refreshData();
-            },
-            child: SingleChildScrollView(
-               physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(children: [
-                cardAlamat(
-                  dataUser[0]['nama'],
-                  dataUser[0]['alamat'],
-                ),
-                Column(
-                  children: List.generate(listCart.length, (index) {
-                    return cardPesananUI(
-                      listCart[index]['foto'],
-                      listCart[index]['nama_produk'],
-                      listCart[index]['ukuran'],
-                      listCart[index]['jumlah'].toString(),
-                      listCart[index]['harga_produk'].toString()
-                    );
-                  })
-                ),
-                ringkasanPembayaran(
-                  ongkir: "10000", 
-                  subtotal: (totalBayar - 10000).toString(), 
-                  total: totalBayar.toString()),
-                totalHarga(),
-                buttonLanjutkanPembayaran()
-              ],)
-            )
+          child: SingleChildScrollView(
+            child: Column(children: [
+              cardAlamat(
+                dataUser[0]['nama'],
+                dataUser[0]['alamat'],
+              ),
+              Column(
+                children: List.generate(listCart.length, (index) {
+                  return cardPesananUI(
+                    listCart[index]['foto'],
+                    listCart[index]['nama_produk'],
+                    listCart[index]['ukuran'],
+                    listCart[index]['jumlah'].toString(),
+                    listCart[index]['harga_produk'].toString()
+                  );
+                })
+              ),
+              ringkasanPembayaran(
+                ongkir: "10000", 
+                subtotal: (totalBayar - 10000).toString(), 
+                total: totalBayar.toString()),
+              totalHarga(),
+              buttonLanjutkanPembayaran()
+            ],)
           )
         )
-      )
+      )      
     );
 
   }

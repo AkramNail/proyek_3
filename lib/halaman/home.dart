@@ -8,6 +8,8 @@ import 'package:proyek_3/halaman/cart.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:proyek_3/halaman/produk/produk.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 
 
@@ -24,11 +26,21 @@ class _HalamanHomeState extends State<HalamanHome> {
 
   List<Map<String, dynamic>> listProduk = [];
 
-
   @override
   void initState() {
     super.initState();
     getData();
+  }
+
+  Future<String> getSnapToken(int amount) async {
+    final response = await http.post(
+      Uri.parse("https://us-central1-proyek3-37bb7.cloudfunctions.net/createTransaction"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"amount": amount}),
+    );
+
+    final data = jsonDecode(response.body);
+    return data["token"];
   }
 
   Future<void> getData() async {
@@ -119,7 +131,7 @@ class _HalamanHomeState extends State<HalamanHome> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => HalamanCart(),
+          builder: (context) => HalamanCart(controller: widget.controller),
         ),
       );
     }
@@ -127,7 +139,7 @@ class _HalamanHomeState extends State<HalamanHome> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => HalamanCart(),
+          builder: (context) => HalamanCart(controller: widget.controller),
         ),
       );
     }
@@ -139,6 +151,7 @@ class _HalamanHomeState extends State<HalamanHome> {
       String bahanProduk,
       String deskripsiProduk,
       String hargaProduk,
+      List<dynamic> stock,
       List<dynamic> ukuranProduk,
       List<dynamic> daftarGambar,
     ){
@@ -152,8 +165,9 @@ class _HalamanHomeState extends State<HalamanHome> {
             bahanProduk: bahanProduk,
             deskripsiProduk: deskripsiProduk,
             hargaProduk: hargaProduk,
+            stock: stock,
             ukuranProduk: ukuranProduk,
-            daftarGambar: daftarGambar
+            daftarGambar: daftarGambar,
           ),
         ),
       );
@@ -235,6 +249,7 @@ class _HalamanHomeState extends State<HalamanHome> {
       String bahanProduk,
       String deskripsiProduk,
       String hargaProduk,
+      List<dynamic> stock,
       List<dynamic> ukuranProduk,
       List<dynamic> daftarGambar,
     ){
@@ -253,6 +268,7 @@ class _HalamanHomeState extends State<HalamanHome> {
               bahanProduk,
               deskripsiProduk,
               hargaProduk,
+              stock,
               ukuranProduk,
               daftarGambar
             ); },
@@ -329,6 +345,7 @@ class _HalamanHomeState extends State<HalamanHome> {
                   listProduk[index]['bahan_produk'],
                   listProduk[index]['deskripsi_produk'],
                   listProduk[index]['harga_produk'].toString(),
+                  listProduk[index]['jumlah_produk'],
                   listProduk[index]['ukuran'],
                   listProduk[index]['foto']
                 ),
@@ -342,6 +359,7 @@ class _HalamanHomeState extends State<HalamanHome> {
                   listProduk[index + 1]['bahan_produk'],
                   listProduk[index + 1]['deskripsi_produk'],
                   listProduk[index + 1]['harga_produk'].toString(),
+                  listProduk[index + 1]['jumlah_produk'],
                   listProduk[index + 1]['ukuran'],
                   listProduk[index + 1]['foto']
                 )

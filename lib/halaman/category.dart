@@ -23,15 +23,27 @@ class _HalamanKategori extends State<HalamanKategori> {
   List<Map<String, dynamic>> listProduk = [];
   List<String> listKategori = ["0"];
 
-  List<int> listTextIndikator = [0];
+  List<int> listTextIndikator = [];
 
   @override
-    void initState() {
-      super.initState();
-      getData();
-    }
+  void initState() {
+    super.initState();
+    getData();
+  }
 
-    void ubahKategori(String kategori){
+  void ubahKategori(String kategori){
+    if(kategori == ""){
+      List<int> temporaryList = [];
+      int index = 0;
+      listProduk.forEach((produk) {
+        temporaryList.add(index);
+        index += 1;
+      });
+      setState(() {
+        listTextIndikator = temporaryList;
+        print(listTextIndikator);
+      });
+    }else{
       List<int> temporaryList = [];
       int index = 0;
       listProduk.forEach((produk) {
@@ -45,6 +57,7 @@ class _HalamanKategori extends State<HalamanKategori> {
         print(listTextIndikator);
       });
     }
+  }
 
     Future<String> getImageUrl(String imageName) async {
       // If imageName is empty or null, return a placeholder immediately
@@ -115,6 +128,7 @@ class _HalamanKategori extends State<HalamanKategori> {
           setState(() {
             listProduk = temporaryList;
             listKategori = temporaryListKategori;
+            ubahKategori("");
             print(listProduk);
             print(listKategori);
           });
@@ -139,6 +153,7 @@ class _HalamanKategori extends State<HalamanKategori> {
       String bahanProduk,
       String deskripsiProduk,
       String hargaProduk,
+      List<dynamic> stock,
       List<dynamic> ukuranProduk,
       List<dynamic> daftarGambar,
     ){
@@ -153,7 +168,8 @@ class _HalamanKategori extends State<HalamanKategori> {
             deskripsiProduk: deskripsiProduk,
             hargaProduk: hargaProduk,
             ukuranProduk: ukuranProduk,
-            daftarGambar: daftarGambar
+            daftarGambar: daftarGambar,
+            stock: stock,
           ),
         ),
       );
@@ -274,7 +290,8 @@ class _HalamanKategori extends State<HalamanKategori> {
 
       return GestureDetector(
         onTap: () {
-          popupSemuaKategori();
+          //popupSemuaKategori();
+          ubahKategori("");
         },
         child: Container(
           height: 20,
@@ -306,12 +323,9 @@ class _HalamanKategori extends State<HalamanKategori> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: [
-                  buttonKategori("T-shirt"),
-                  buttonKategori("Pants"),
-                  buttonKategori("Shirt"),
-                  buttonKategori("Cap"),
-                ],
+                children: List.generate(listKategori.length, (index) {
+                  return buttonKategori(listKategori[index]);  
+                })
               ),
             ),
           ),
@@ -327,6 +341,7 @@ class _HalamanKategori extends State<HalamanKategori> {
       String bahanProduk,
       String deskripsiProduk,
       String hargaProduk,
+      List<dynamic> stock,
       List<dynamic> ukuranProduk,
       List<dynamic> daftarGambar,
     ){
@@ -345,6 +360,7 @@ class _HalamanKategori extends State<HalamanKategori> {
               bahanProduk,
               deskripsiProduk,
               hargaProduk,
+              stock,
               ukuranProduk,
               daftarGambar,
             ); },
@@ -421,6 +437,7 @@ class _HalamanKategori extends State<HalamanKategori> {
                   listProduk[listIndikator[index]]['bahan_produk'],
                   listProduk[listIndikator[index]]['deskripsi_produk'],
                   listProduk[listIndikator[index]]['harga_produk'].toString(),
+                  listProduk[listIndikator[index]]['jumlah_produk'],
                   listProduk[listIndikator[index]]['ukuran'],
                   listProduk[listIndikator[index]]['foto']
                 ),
@@ -434,6 +451,7 @@ class _HalamanKategori extends State<HalamanKategori> {
                   listProduk[listIndikator[index + 1]]['bahan_produk'],
                   listProduk[listIndikator[index + 1]]['deskripsi_produk'],
                   listProduk[listIndikator[index + 1]]['harga_produk'].toString(),
+                  listProduk[listIndikator[index + 1]]['jumlah_produk'],
                   listProduk[listIndikator[index + 1]]['ukuran'],
                   listProduk[listIndikator[index + 1]]['foto']
                 )

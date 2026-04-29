@@ -1,10 +1,10 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:proyek_3/api.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class HalamanProduk extends StatefulWidget{
 
@@ -14,6 +14,7 @@ class HalamanProduk extends StatefulWidget{
   final String bahanProduk;
   final String deskripsiProduk;
   final String hargaProduk;
+  final List<dynamic> stock;
   final List<dynamic> ukuranProduk;
   final List<dynamic> daftarGambar;
 
@@ -26,6 +27,7 @@ class HalamanProduk extends StatefulWidget{
     required this.hargaProduk, 
     required this.ukuranProduk,
     required this.daftarGambar,
+    required this.stock,
 
   });
 
@@ -35,6 +37,397 @@ class HalamanProduk extends StatefulWidget{
 }
 
 class _HalamanProdukState extends State<HalamanProduk> {
+  
+  TextEditingController jumlahController = TextEditingController(text: "0");
+  int selectedIndex = 0;
+  int stockIndexSekarang = 0;
+
+  Future<void> tambahCart(String tipe) async{
+
+    String msg = "";
+    if(int.parse(jumlahController.text) <= widget.stock[selectedIndex]){
+      if(int.parse(jumlahController.text) > 0){
+
+      final User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        String idDoc = DateTime.now().millisecondsSinceEpoch.toString();
+        await FirebaseFirestore.instance
+          .collection('cart')
+          .doc(idDoc)
+          .set({
+            'jumlah': int.parse(jumlahController.text),
+            'pembeli': user.uid,
+            'produk': widget.id,
+            'ukuran': widget.ukuranProduk[selectedIndex],
+            'tipe': tipe
+          });
+        msg = "Produk berhasil di tambah ke cart";
+      }
+
+      }else{
+        msg = "Mohon maaf jumlah produk tidak boleh 0";
+      }
+    }else{
+      msg = "Mohon maaf jumlah yang anda pilih melebihi stock";
+    }
+
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.SNACKBAR,
+      backgroundColor: Colors.black54,
+      textColor: Colors.white,
+      fontSize: 14.0,
+    );
+  }
+
+  void showPopupPenjualan(BuildContext context, List<dynamic> sizes) {
+    selectedIndex = 0;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3F5F6F),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// TITLE
+                    const Text(
+                      "Klik ukuran yang ingin anda beli",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    /// SIZE BUTTON
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(sizes.length, (index) {
+                        bool isSelected = selectedIndex == index;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedIndex = index;
+                            });
+                          },
+                          child: Container(
+                            width: 50,
+                            height: 45,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF4CAF50),
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              sizes[index],
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.green
+                                    : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// TEXT
+                    const Text(
+                      "Masukan berapa banyak yang ingin anda beli",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// INPUT QTY
+                    Container(
+                      width: 90,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.black),
+                      ),
+                      child: TextField(
+                        controller: jumlahController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// BUTTONS
+                    Row(
+                      children: [
+                        /// KEMBALI (MERAH)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 45,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF3D57),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Kembali",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        /// TAMBAH (HIJAU)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              tambahCart("penjualan");
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 45,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10A56F),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Tambah",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void updateJumlahStock(String ukuran){
+    int index = 0;
+    widget.ukuranProduk.forEach((item){
+      if(item == ukuran){
+        setState(() {        
+          stockIndexSekarang = index;
+        });
+      }
+      index += 1;
+    });
+  }
+
+  void showPopupOrder(BuildContext context, List<dynamic> sizes) {
+    selectedIndex = 0;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3F5F6F),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// TITLE
+                    const Text(
+                      "Klik ukuran yang ingin anda order",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    /// SIZE BUTTON
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(sizes.length, (index) {
+                        bool isSelected = selectedIndex == index;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedIndex = index;
+                            });
+                          },
+                          child: Container(
+                            width: 50,
+                            height: 45,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF4CAF50),
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              sizes[index],
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.green
+                                    : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// TEXT
+                    const Text(
+                      "Masukan berapa banyak yang ingin anda order",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// INPUT QTY
+                    Container(
+                      width: 90,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.black),
+                      ),
+                      child: TextField(
+                        controller: jumlahController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// BUTTONS
+                    Row(
+                      children: [
+                        /// KEMBALI (MERAH)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 45,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF3D57),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Kembali",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        /// TAMBAH (HIJAU)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              tambahCart("order");
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 45,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10A56F),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Tambah",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   Widget gambarProduk(double divacieHeight){
     return Container(
@@ -129,13 +522,18 @@ class _HalamanProdukState extends State<HalamanProduk> {
         child: 
             Row(
               children: widget.ukuranProduk.map((ukuran) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  height: 35 * divacieHeight,
-                  width: 35 * divacieHeight,
-                  color: const Color.fromARGB(255, 212, 227, 224),
-                  child: Center(
-                    child: Text(ukuran),
+                return InkWell(
+                  onTap: (){
+                    updateJumlahStock(ukuran);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    height: 35 * divacieHeight,
+                    width: 35 * divacieHeight,
+                    color: const Color.fromARGB(255, 212, 227, 224),
+                    child: Center(
+                      child: Text(ukuran),
+                    ),
                   ),
                 );
               }).toList(),
@@ -173,6 +571,23 @@ class _HalamanProdukState extends State<HalamanProduk> {
           width: double.infinity,
           margin: EdgeInsetsDirectional.only(bottom: 3, start: 20, end: 20),
           child: Text("Bahan: ${widget.bahanProduk}",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 15 * divacieHeight
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget textStock(double divacieHeight){
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: EdgeInsetsDirectional.only(bottom: 3, start: 20, end: 20),
+          child: Text("Stock: ${widget.stock[stockIndexSekarang]}",
             style: TextStyle(
               color: Colors.black,
               fontSize: 15 * divacieHeight
@@ -221,42 +636,76 @@ class _HalamanProdukState extends State<HalamanProduk> {
           ),
 
           Spacer(),
-
+          widget.stock[stockIndexSekarang] > 0
           // Button Add to Cart (full clickable)
-          InkWell(
-            onTap: () {
-              //addToCart();
-            },
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Color.fromARGB(255, 10, 207, 131),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    "Add to Cart",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            ? InkWell(
+              onTap: () {
+                showPopupPenjualan(context, widget.ukuranProduk);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Color.fromARGB(255, 10, 207, 131),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      "Add to Cart",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  SvgPicture.asset(
-                    "assets/icon/shope.svg",
-                    width: 20,
-                    height: 20,
-                    colorFilter: ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
+                    SizedBox(width: 8),
+                    SvgPicture.asset(
+                      "assets/icon/shope.svg",
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            )
+          : InkWell(
+              onTap: () {
+                showPopupOrder(context, widget.ukuranProduk);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Color.fromARGB(255, 10, 207, 131),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      "Order produk",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    SvgPicture.asset(
+                      "assets/icon/shope.svg",
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
         ],
       ),
     );
@@ -265,10 +714,7 @@ class _HalamanProdukState extends State<HalamanProduk> {
   @override
   Widget build(BuildContext context) {
 
-    double divacieWidth = (MediaQuery.of(context).size.width)/300;
     double divacieHeight = (MediaQuery.of(context).size.height)/600;
-    double maxWidth = MediaQuery.of(context).size.width;
-    double maxHeight = MediaQuery.of(context).size.width;
 
     return Scaffold(
       appBar: AppBar(
@@ -310,6 +756,7 @@ class _HalamanProdukState extends State<HalamanProduk> {
                 textKategori(divacieHeight),
                 widgetUkuranProduk(divacieHeight),
                 textBahan(divacieHeight),
+                textStock(divacieHeight),
                 bagianHarga(),
               ]
             ),

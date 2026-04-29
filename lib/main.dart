@@ -5,6 +5,7 @@ import 'package:proyek_3/login/login.dart';
 import 'package:proyek_3/login/daftar.dart';
 import 'package:proyek_3/halaman/home.dart';
 import 'package:proyek_3/halaman/profile.dart';
+import 'package:proyek_3/mid_test.dart';
 import 'package:proyek_3/navbar.dart';
 //import 'package:flutter_localization/flutter_localization.dart';
 
@@ -68,6 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
           if (snapshot.hasData) {
             return NavbarUser(); 
+            //return PaymentPage(); 
           } else {
             return HalamanLogin();
           }
