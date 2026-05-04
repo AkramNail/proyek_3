@@ -19,21 +19,18 @@ class AuthService {
 
     try {
 
-      // ✅ VALIDASI INPUT
       if (nama.isEmpty) throw Exception("Nama wajib diisi");
       if (alamat.isEmpty) throw Exception("Alamat wajib diisi");
       if (email.isEmpty) throw Exception("Email wajib diisi");
       if (password.isEmpty) throw Exception("Password wajib diisi");
       if (nohp.isEmpty) throw Exception("No HP wajib diisi");
 
-      // ✅ BUAT USER DULU DI FIREBASE AUTH
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password
       );
 
-      // ✅ SIMPAN KE FIRESTORE (pakai UID biar rapi)
       await FirebaseFirestore.instance
           .collection('akun')
           .doc(userCredential.user!.uid)
@@ -43,13 +40,6 @@ class AuthService {
         'alamat': alamat,
         'nomor_hp': nohp,
       });
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (BuildContext context) => NavbarUser()
-        )
-      );
 
     } on FirebaseAuthException catch (e) {
       String message = '';
@@ -74,7 +64,6 @@ class AuthService {
       );
 
     } catch (e) {
-      // ✅ ERROR VALIDASI MASUK KE SINI
       Fluttertoast.showToast(
         msg: e.toString().replaceAll("Exception: ", ""),
         toastLength: Toast.LENGTH_LONG,
@@ -103,7 +92,7 @@ class AuthService {
       );
 
       await Future.delayed(const Duration(seconds: 1));
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => NavbarUser()
@@ -113,9 +102,9 @@ class AuthService {
     } on FirebaseAuthException catch(e) {
       String message = '';
       if (e.code == 'invalid-email') {
-        message = 'Mohon maaf sandi atau password salah.';
+        message = 'Mohon maaf email atau password salah.';
       } else if (e.code == 'invalid-credential') {
-        message = 'Mohon maaf sandi atau password salah.';
+        message = 'Mohon maaf email atau password salah.';
       }
        Fluttertoast.showToast(
         msg: message,
@@ -127,6 +116,7 @@ class AuthService {
       );
     }
     catch(e){
+      /*
       Fluttertoast.showToast(
         msg: e.toString().replaceAll("Exception: ", ""),
         toastLength: Toast.LENGTH_LONG,
@@ -135,6 +125,7 @@ class AuthService {
         textColor: Colors.white,
         fontSize: 14.0,
       );
+      */
     }
 
   }

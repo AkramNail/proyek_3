@@ -36,6 +36,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       //supportedLocales: localization.supportedLocales,
       //localizationsDelegates: localization.localizationsDelegates,
+      routes: {
+        '/main': (context) => MyHomePage(),
+      },
     );
   }
 }

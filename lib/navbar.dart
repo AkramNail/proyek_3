@@ -97,7 +97,7 @@ class _NavbarUserState extends State<NavbarUser> {
 
       // profil
       PersistentTabConfig(
-        screen: const HalamanProfil(),
+        screen: HalamanProfil(controller: _controller),
         item: ItemConfig(
           icon: navIcon('assets/icon/profil.svg', colorIconAktif),
           inactiveIcon: navIcon('assets/icon/profil.svg', colorIconMati),

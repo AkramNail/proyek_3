@@ -11,8 +11,6 @@ import 'package:proyek_3/halaman/produk/produk.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-
-
 class HalamanHome extends StatefulWidget {
   final PersistentTabController controller;
 
@@ -23,8 +21,24 @@ class HalamanHome extends StatefulWidget {
 }
 
 class _HalamanHomeState extends State<HalamanHome> {
+  
+  TextEditingController aiTextController = TextEditingController(text: "");
 
   List<Map<String, dynamic>> listProduk = [];
+  Map<String, List<String>> aiListKategori = {};
+  Map<String, List<String>> aiListBahan = {};
+  Map<String, List<String>> aiListUkuran = {};
+  Map<int, List<String>> aiListHarga = {};
+  Map<int, List<String>> aiListJumlah = {};
+
+  Map<String, List<String>> positifKategori = {};
+  Map<String, List<String>> positifBahan = {};
+  Map<String, List<String>> positifUkuran = {};
+  Map<String, List<String>> positifHarga = {};
+  Map<String, List<String>> positifJumlah = {};
+
+  List<Map<String, dynamic>> produkYangDitampilkanDiAI = [];
+  List<String> idProdukYangDitampilkanDiAISementara = [];
 
   @override
   void initState() {
@@ -48,10 +62,15 @@ class _HalamanHomeState extends State<HalamanHome> {
       // 1. Get Firestore Snapshot
       var snapshot = await FirebaseFirestore.instance
         .collection('produk')
-        .limit(6)
         .get();
 
       List<Map<String, dynamic>> temporaryList = [];
+
+      Map<String, List<String>> temporaryListKategori = {};
+      Map<String, List<String>> temporaryListBahan = {};
+      Map<String, List<String>> temporaryListUkuran = {};
+      Map<int, List<String>> temporaryListHarga = {};
+      Map<int, List<String>> temporaryListJumlah = {};
 
       for (var doc in snapshot.docs) {
         try {
@@ -79,6 +98,39 @@ class _HalamanHomeState extends State<HalamanHome> {
           }
 
           temporaryList.add(data);
+
+          //bagian ai
+          temporaryListBahan.putIfAbsent('${data['bahan_produk'].toLowerCase()}', () => []);
+          temporaryListBahan.putIfAbsent('${data['bahan_produk'].toLowerCase()},', () => []);
+          temporaryListBahan['${data['bahan_produk'].toLowerCase()}']!.add(data['id'].toString());
+          temporaryListBahan['${data['bahan_produk'].toLowerCase()},']!.add(data['id'].toString());
+
+
+          temporaryListKategori.putIfAbsent('${data['kategori'].toLowerCase()}', () => []);
+          temporaryListKategori.putIfAbsent('${data['kategori'].toLowerCase()},', () => []);
+          temporaryListKategori['${data['kategori'].toLowerCase()}']!.add(data['id'].toString());
+          temporaryListKategori['${data['kategori'].toLowerCase()},']!.add(data['id'].toString());
+
+          int harga = (data['harga_produk'] as num).toInt();
+          temporaryListHarga.putIfAbsent(harga, () => []);
+          temporaryListHarga[harga]!.add(data['id'].toString());
+
+          // jumlah
+          List<int> dataJumlah = List<int>.from(data['jumlah_produk']);
+          for (var item in dataJumlah) {
+            temporaryListJumlah.putIfAbsent(item, () => []);
+            temporaryListJumlah[item]!.add(data['id'].toString());
+          }
+
+          // ukuran
+          List<String> dataUkuran = List<String>.from(data['ukuran']);
+          for (var item in dataUkuran) {
+            temporaryListUkuran.putIfAbsent(item.toLowerCase(), () => []);
+            temporaryListUkuran.putIfAbsent('${item.toLowerCase()},', () => []);
+            temporaryListUkuran[item.toLowerCase()]!.add(data['id'].toString());
+            temporaryListUkuran['${item.toLowerCase()},']!.add(data['id'].toString());
+          }
+
         } catch (itemError) {
           print("Error processing document ${doc.id}: $itemError");
         }
@@ -90,7 +142,16 @@ class _HalamanHomeState extends State<HalamanHome> {
           listProduk = temporaryList;
           print(listProduk);
           final user = FirebaseAuth.instance.currentUser;
-          print(user);
+          aiListUkuran = temporaryListUkuran;
+          aiListJumlah = temporaryListJumlah;
+          aiListBahan = temporaryListBahan;
+          aiListKategori = temporaryListKategori;
+          aiListHarga = temporaryListHarga;
+          print("ukuran: $aiListUkuran");
+          print("Jumlah: $aiListJumlah");
+          print("Bahan: $aiListBahan");
+          print("Kategori: $aiListKategori");
+          print("Harga: $aiListHarga");
         });
       }
     } catch (globalError) {
@@ -104,6 +165,393 @@ class _HalamanHomeState extends State<HalamanHome> {
 
     final ref = FirebaseStorage.instance.ref().child(imageName);
     return await ref.getDownloadURL();
+  }
+
+  Widget _productCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.amber
+                /*
+                image: const DecorationImage(
+                  image: NetworkImage("https://via.placeholder.com/150"),
+                  fit: BoxFit.cover,
+                ),
+                */
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              "T-Shirt",
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              "Black Vibes",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              "Rp. 70.000",
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void cekListKategori(String input){
+    aiListKategori.forEach((key, item){
+      if(key == input){
+        item.forEach((id){
+          positifKategori[key] ??= []; 
+          positifKategori[key]?.add(id);
+        });
+      }
+    });
+  }
+  void cekListBahan(String input){
+    aiListBahan.forEach((key, item){
+      if(key == input){
+        item.forEach((id){
+          positifBahan[key] ??= []; 
+          positifBahan[key]?.add(id);
+        });
+      }
+    });
+  }
+  void cekListUkuran(String input){
+    aiListUkuran.forEach((key, item){
+      if(key == input){
+        item.forEach((id){
+          positifUkuran[key] ??= []; 
+          positifUkuran[key]?.add(id);
+        });
+      }
+    });
+  }
+  void cekListHarga(String input, int inputHarga){
+    print("info: $input dan, Harga: $inputHarga");
+    if(inputHarga != 9999999999999978){
+      aiListHarga.forEach((key, item){
+        switch(input){
+          case('dibawah' || 'bawah'):
+            if(inputHarga >= key){
+              item.forEach((id){
+                positifHarga['dibawah'] ??= []; 
+                positifHarga['dibawah']?.add(id);
+              });
+            }
+          break;
+          case('' || 'kisaran' || 'antara'):
+            if(
+              inputHarga >= (key + 40000) &&
+              inputHarga <= (key + 40000)
+            ){
+              item.forEach((id){
+                positifHarga['kisaran'] ??= []; 
+                positifHarga['kisaran']?.add(id);
+              });
+            }
+          break;
+          case('diatas' || 'atas'):
+            if(inputHarga <= key){
+              item.forEach((id){
+                positifHarga['diatas'] ??= []; 
+                positifHarga['diatas']?.add(id);
+              });
+            }
+          break;
+        }
+      });
+    }
+  }
+  void cekListJumlah(String input, int inputJumlah){
+    if(inputJumlah != 9999999999999978){
+      aiListJumlah.forEach((key, item){
+        switch(input){
+          case('dibawah' || 'bawah'):
+            if(inputJumlah >= key){
+              item.forEach((id){
+                positifJumlah['dibawah'] ??= []; 
+                positifJumlah['dibawah']?.add(id);
+              });
+            }
+          break;
+          case('' || 'kisaran' || 'antara'):
+            if(
+              inputJumlah >= (key + 40000) &&
+              inputJumlah <= (key + 40000)
+            ){
+              item.forEach((id){
+                positifJumlah['kisaran'] ??= []; 
+                positifJumlah['kisaran']?.add(id);
+              });
+            }
+          break;
+          case('diatas' || 'atas'):
+            if(inputJumlah <= key){
+              item.forEach((id){
+                positifJumlah['diatas'] ??= []; 
+                positifJumlah['diatas']?.add(id);
+              });
+            }
+          break;
+        }
+      });
+    }
+  }
+  void memasukanKedataSementara(Map<String, List<String>> listnya){
+    listnya.forEach((key, value) {
+      value.forEach((idAda){
+        if(idProdukYangDitampilkanDiAISementara.isEmpty){
+          idProdukYangDitampilkanDiAISementara.add(idAda);
+        }else{
+          bool isIdBisaMasuk = true;
+          idProdukYangDitampilkanDiAISementara.forEach((item){
+            if(item == idAda){
+              isIdBisaMasuk = false;
+            }
+          });
+          if(isIdBisaMasuk == true){
+            idProdukYangDitampilkanDiAISementara.add(idAda);
+          }
+        }
+      });
+      print(value);
+    });
+  }
+  Future<void> algoritmaPencarian(String input) async{
+
+    produkYangDitampilkanDiAI = [];
+    idProdukYangDitampilkanDiAISementara = [];
+
+    positifKategori = {};
+    positifBahan = {};
+    positifUkuran = {};
+    positifHarga = {};
+    positifJumlah = {};
+
+    print("yang masuk: $input");
+    int indexStart = 0;
+    int indexSekarang = 0;
+    input.toLowerCase();
+    List<String> dataInput = input.split(" ");
+    dataInput.forEach((item){
+      
+      print("word: $item");
+      if(item == 'kategori' || item == 'kategori,'){
+        for (var i = indexStart; i < dataInput.length; i++) {
+          if(dataInput[i] == 'jangan'){
+            break;
+          }
+          cekListKategori(dataInput[i]);
+        }
+      }
+
+      if(item == 'bahan' || item == 'bahan,'){
+        indexStart = indexSekarang;
+        for (var i = indexStart; i < dataInput.length; i++) {
+          if(dataInput[i] == 'jangan'){
+            break;
+          }
+          cekListBahan(dataInput[i]);
+        }
+      }
+
+      if(item == 'ukuran' || item == 'ukuran,'){
+        indexStart = indexSekarang;
+        for (var i = indexStart; i < dataInput.length; i++) {
+          if(dataInput[i] == 'jangan'){
+            break;
+          }
+          cekListUkuran(dataInput[i]);
+        }
+      }
+
+      if(item == 'harga' || item == 'harga,'){
+        indexStart = indexSekarang;
+        String casenya = "";
+        for (var i = indexStart; i < dataInput.length; i++) {
+          switch(dataInput[i]){
+            case('dibawah' || 'bawah'):
+              casenya = "bawah";
+            break;
+            case('kisaran' || 'antara'):
+              casenya = "antara";
+            break;
+            case('diatas' || 'atas'):
+              casenya = "atas";
+            break;
+          }
+          cekListHarga(casenya, int.tryParse(dataInput[i]) ?? 9999999999999978);
+        }
+      }
+
+      if(item == 'jumlah' || item == 'jumlah,' || item == 'stock' || item == 'stock,'){
+        indexStart = indexSekarang;
+        String casenya = "";
+        for (var i = indexStart; i < dataInput.length; i++) {
+          switch(dataInput[i]){
+            case('dibawah' || 'bawah'):
+              casenya = "bawah";
+            break;
+            case('kisaran' || 'antara'):
+              casenya = "antara";
+            break;
+            case('diatas' || 'atas'):
+              casenya = "atas";
+            break;
+          }
+          cekListJumlah(casenya, int.tryParse(dataInput[i]) ?? 9999999999999978);
+        }
+      }
+
+      indexSekarang += 1;
+    });
+
+    memasukanKedataSementara(positifKategori);
+
+    print("Kategori: $positifKategori");
+    print("Harga: $positifHarga");
+    print("ukuran: $positifUkuran");
+    print("Jumlah: $positifJumlah");
+    print("Bahan: $positifBahan");
+
+  }
+  void popupAi(){
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: const Color.fromARGB(47, 0, 0, 0),
+              insetPadding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.8,
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      // 🔍 SEARCH BAR
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        height: 45,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.auto_awesome),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: aiTextController,
+                                decoration: InputDecoration(
+                                  hintText: "Ketik apa yang anda cari",
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: (){
+                                algoritmaPencarian(aiTextController.text);
+                              },
+                              child: Icon(Icons.send),
+                            )
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // 💬 CONTENT
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              // Chat Bubble
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.smart_toy, size: 20),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        "Saya menemukan 5 produk dengan kriteria yang anda sampaikan",
+                                        style: TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // 🛍️ GRID
+                              Expanded(
+                                child: GridView.builder(
+                                  itemCount: 5,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 0.72,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    return _productCard();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+        );
+      }
+    );
   }
 
   @override
@@ -124,6 +572,10 @@ class _HalamanHomeState extends State<HalamanHome> {
     //List<String> listYanto = ["L", "XXL", "XXXL"];
     List<String> listGambar = ["assets/baju/1.jpg", "assets/baju/2.jpg"];
 
+    void showAiDialog(BuildContext context) {
+      popupAi();
+    }
+
     void pindahHalamanKeCart(){
       widget.controller.jumpToTab(3);
     }
@@ -136,12 +588,7 @@ class _HalamanHomeState extends State<HalamanHome> {
       );
     }
     void pindahHalamanKeSearch(){
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HalamanCart(controller: widget.controller),
-        ),
-      );
+      showAiDialog(context);
     }
     
     void pindahHalamanProduk(
@@ -402,7 +849,7 @@ class _HalamanHomeState extends State<HalamanHome> {
               children: [
                 iconTopBar("assets/icon/search.svg", pindahHalamanKeSearch),
                 iconTopBar("assets/icon/cart.svg", pindahHalamanKeCart),
-                iconTopBar("assets/icon/bell.svg", pindahHalamanKeInfo),
+                
               ],
             )
           ],

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
@@ -26,6 +27,17 @@ class _HalamanOrderState extends State<HalamanOrder> {
   List<Map<String, dynamic>> listPenjualan = [];
   List<int> indikatorOrder = [];
   List<int> indikatorPenjualan = [];
+  String idPunyaUser = "";
+
+  Future<void> refreshData() async {
+    setState(() {
+      indikatorPenjualan = [];
+      indikatorOrder = [];
+      listOrder = [];
+      listPenjualan = [];
+    });
+    getData();
+  }
   
   Future<String> getImageUrl(String imageName) async {
     // If imageName is empty or null, return a placeholder immediately
@@ -37,40 +49,78 @@ class _HalamanOrderState extends State<HalamanOrder> {
 
   Future<void> getData() async {
     try {
-      // 1. Get Firestore Snapshot
-      var snapshot = await FirebaseFirestore.instance
-        .collection('order')
-        .limit(12)
-        .get();
+      final User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        String uid = user.uid;
+        idPunyaUser = user.uid;
+        print('Current User ID: $uid');
 
-      List<Map<String, dynamic>> temporaryList = [];
 
-      for (var doc in snapshot.docs) {
-        try {
-          Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
-          data['id'] = doc.id;
+        // 1. Get Firestore Snapshot
+        var snapshot = await FirebaseFirestore.instance
+          .collection('order')
+          .limit(12)
+          .get();
+        var snapshotPenjualan = await FirebaseFirestore.instance
+          .collection('penjualan')
+          .limit(12)
+          .get();
 
-          if (data['foto'] != null) {
-            String urlFoto = await getImageUrl(data['foto']);
-            data['foto'] = urlFoto;
-          } else {
-            data['foto'] = [];
+        List<Map<String, dynamic>> temporaryList = [];
+        List<Map<String, dynamic>> temporaryListPenjualan = [];
+
+
+        for (var doc in snapshot.docs) {
+          try {
+            if(doc['id_pembeli'] == uid){
+              Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
+              data['id'] = doc.id;
+
+              if (data['foto'] != null) {
+                String urlFoto = await getImageUrl(data['foto']);
+                data['foto'] = urlFoto;
+              } else {
+                data['foto'] = [];
+              }
+
+              temporaryList.add(data);
+            }
+          } catch (itemError) {
+            print("Error processing document ${doc.id}: $itemError");
           }
+        }
 
-          temporaryList.add(data);
-        } catch (itemError) {
-          print("Error processing document ${doc.id}: $itemError");
+        for (var doc in snapshotPenjualan.docs) {
+          try {
+            if(doc['id_pembeli'] == uid){
+              Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
+              data['id'] = doc.id;
+
+              if (data['foto'] != null) {
+                String urlFoto = await getImageUrl(data['foto']);
+                data['foto'] = urlFoto;
+              } else {
+                data['foto'] = [];
+              }
+
+              temporaryListPenjualan.add(data);
+            }
+          } catch (itemError) {
+            print("Error processing document ${doc.id}: $itemError");
+          }
+        }
+
+        // 3. Safety check before updating UI
+        if (mounted) {
+          setState(() {
+            listOrder = temporaryList;
+            listPenjualan = temporaryListPenjualan;
+            print(listOrder);
+            ubahYangDitampilkan("");
+          });
         }
       }
-
-      // 3. Safety check before updating UI
-      if (mounted) {
-        setState(() {
-          listOrder = temporaryList;
-          print(listOrder);
-          ubahYangDitampilkan("");
-        });
-      }
+      
     } catch (globalError) {
       print("GLOBAL ERROR in getData: $globalError");
     }
@@ -336,33 +386,41 @@ class _HalamanOrderState extends State<HalamanOrder> {
       ),
 
 
-      body: ScrollConfiguration(
-        behavior: const ScrollBehavior(),
-        child: GlowingOverscrollIndicator(
-          axisDirection: AxisDirection.down,
-          color: const Color.fromARGB(156, 0, 0, 0),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Container(
-                  child: kategoriOrder(divacieHeight),
-                ),
-                Column(
-                  children: List.generate(indikatorOrder.length, (index) {
-                    return cardPesanan(
-                      listOrder[indikatorOrder[index]]["status"],
-                      listOrder[indikatorOrder[index]]["foto"],
-                      listOrder[indikatorOrder[index]]["nama_produk"],
-                      listOrder[indikatorOrder[index]]["ukuran"],
-                      listOrder[indikatorOrder[index]]["jumlah"],
-                    );
-                  })
-                ),
-              ],
-            ),
-          )
-        )
-      )
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await refreshData();
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            kategoriOrder(divacieHeight),
+
+            /// LIST ORDER
+            ...List.generate(indikatorOrder.length, (index) {
+              final item = listOrder[indikatorOrder[index]];
+              return cardPesanan(
+                item["status"],
+                item["foto"],
+                item["nama_produk"],
+                item["ukuran"],
+                item["jumlah"],
+              );
+            }),
+
+            /// LIST PENJUALAN
+            ...List.generate(indikatorPenjualan.length, (index) {
+              final item = listPenjualan[indikatorPenjualan[index]];
+              return cardPesanan(
+                item["status"],
+                item["foto"],
+                item["nama_produk"],
+                item["ukuran"],
+                item["jumlah"],
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 }

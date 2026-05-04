@@ -1,54 +1,54 @@
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:proyek_3/login/auth_service.dart';
 import 'package:proyek_3/login/daftar.dart';
-import 'package:proyek_3/login/reset_password.dart';
+import 'package:proyek_3/login/login.dart';
 import 'package:proyek_3/navbar.dart';
 
 TextEditingController emailController = TextEditingController();
 TextEditingController passwordController = TextEditingController();
 
-class HalamanLogin extends StatefulWidget{
+class HalamanResetPassword extends StatefulWidget{
 
-  const HalamanLogin({super.key});
+  const HalamanResetPassword({super.key});
 
   @override
-  State<HalamanLogin> createState() => _HalamanLoginState();
+  State<HalamanResetPassword> createState() => _HalamanResetPasswordState();
 
 }
 
-class _HalamanLoginState extends State<HalamanLogin> {
+class _HalamanResetPasswordState extends State<HalamanResetPassword> {
 
-  void pindahKeHalamanDaftar(){
+  void pindahKeHalamanLogin(){
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HalamanDaftar(),
+        builder: (context) => HalamanLogin(),
       ),
     );
 
   }
 
-    void pindahKeHalamanForgetPassword(){
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HalamanResetPassword(),
-      ),
+  Future<void> resetPassword(String email) async {
+    String msg = "";
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      msg = "Link reset password sudah dikirim ke email: $email";
+    } catch (e) {
+      msg = "Error: $e";
+    }
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.SNACKBAR,
+      backgroundColor: Colors.black54,
+      textColor: Colors.white,
+      fontSize: 14.0,
     );
-
-  }
-
-  void mengverivikasiEmailDanPassword(String inputEmail, String inputPassword){
-
-    AuthService().signin(
-      email: inputEmail, 
-      password: inputPassword, 
-      context: context);
-
   }
 
   Widget formEmailPassword(
@@ -56,7 +56,7 @@ class _HalamanLoginState extends State<HalamanLogin> {
       double maxWidth
   ){
     return Container( color: Colors.transparent, 
-      height: 160 * divacieHeight,
+      height: 90 * divacieHeight,
       margin: EdgeInsets.only(left: 20, right: 20, top: 20),
       child: 
       Form(
@@ -104,73 +104,6 @@ class _HalamanLoginState extends State<HalamanLogin> {
               ),
             ],
           ),
-          Column(
-            children: [
-              Container(
-                margin: EdgeInsets.only(top: 10),
-                alignment: Alignment.centerLeft,
-                child: Text("Password", 
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12 * divacieHeight,
-                    color: Colors.white),)
-              ),
-              Container(
-                margin: EdgeInsets.only(top: 5),
-                height: 30 * divacieHeight,
-                width: maxWidth,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(7),
-                  color: Color.fromRGBO(216, 216, 221, 100),
-                ),
-                child:  TextFormField(
-                  textAlignVertical: TextAlignVertical.center, 
-                  controller: passwordController,
-                  validator: (value){
-                    if(value == null || value.isEmpty){
-                      return "Email tidak boleh kosong";
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: const Color.fromARGB(255, 112, 112, 112), width: 2), // saat diklik
-                    ),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10), // atur padding
-                  )
-                ),
-              ),
-            ],
-          ),
-          Container(
-            margin: EdgeInsets.only(top: 10),
-            child: ElevatedButton(
-              onPressed: () {
-                pindahKeHalamanForgetPassword();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(0),
-                ),
-              ),
-              child: Text(
-                "Forget password",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12 * divacieHeight,
-                  color: Color.fromRGBO(96, 255, 48, 1)
-                ),
-              ),
-            ),
-          )
           
         ]
       ),
@@ -251,53 +184,47 @@ class _HalamanLoginState extends State<HalamanLogin> {
                         borderRadius: BorderRadius.circular(7)
                       ),
                       child: ElevatedButton(onPressed: (){
-                        mengverivikasiEmailDanPassword(emailController.text, passwordController.text);
+                        resetPassword(emailController.text);
                       }, 
                         style: TextButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
-                        child: Text("Login", style: TextStyle(color: Colors.white, fontWeight:FontWeight.bold, fontSize: 18 ),)
+                        child: Text("Kirim link", style: TextStyle(color: Colors.white, fontWeight:FontWeight.bold, fontSize: 18 ),)
                       )
                     ),
-                    /*
-                    //text login with
-                    Container(
-                      margin: EdgeInsets.only(top: 5),  
-                      child: Text("Or login with:", 
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12 * divacieHeight,
-                          color: Color.fromRGBO(255, 255, 255, 1),
-                          )
-                        ),
-                      
-                    ),
-                    
-
-                    //Button login with google
-                    ButtonLoginGoogle(divacieHeight: divacieHeight, maxWidth: maxWidth),
-                    */
 
                     //Button dan text membuat akun
-                    Container(
-                      height: 20,
-                      margin: EdgeInsets.only(top: 5),
-                      child: ElevatedButton(onPressed: (){ pindahKeHalamanDaftar(); }, 
-                        style: TextButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
-                        child: 
-                        Row(
+                   Container(
+                    margin: EdgeInsets.only(top: 5),
+                      child: ElevatedButton(
+                        onPressed: () { pindahKeHalamanLogin(); },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent
+                        ),
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text("Don't have an account?", style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12 * divacieHeight,
-                              color: Color.fromRGBO(255, 255, 255, 1),)),
-                            Text(" Sign up", style: TextStyle(
+                            Text(
+                              "Sudah selesai? Mau kembali ke halaman login?",
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12 * divacieHeight,
-                                color: Color.fromRGBO(96, 255, 48, 1),)) , 
+                                color: Color.fromRGBO(255, 255, 255, 1),
+                              ),
+                            ),
+                            Text(
+                              " Login",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12 * divacieHeight,
+                                color: Color.fromRGBO(96, 255, 48, 1),
+                              ),
+                            ),
                           ],
-                      )    
+                        ),
                     ),
-                    )
+                  )
                   ],
                 ),
               ),
